@@ -1,3 +1,5 @@
+![Java CI](https://github.com/albsch/NQJ-transpiler/workflows/Java%20CI/badge.svg)
+
 # Translating the AST to LLVM
 The program is translated by iterating over all classes defined in the program, and for each class:
 
