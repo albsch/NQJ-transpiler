@@ -1,0 +1,120 @@
+package nqjtooling.transpiler.minijava.ast
+typeprefix: MJ
+
+abstract syntax:
+
+Program(TopLevelDeclList topLevelDecls)
+
+TopLevelDecl =
+    ClassDecl
+  | MethodDecl
+
+ClassDecl(String name, Extended extended, VarDeclList fields, MethodDeclList methods)
+
+Extended =
+    ExtendsNothing()
+  | ExtendsClass(String name)
+
+MemberDecl =
+    VarDecl
+  | MethodDecl
+
+Modifier =
+    ModifierPublic()
+  | ModifierProtected()
+  | ModifierPrivate()
+  | ModifierStatic()
+  | ModifierFinal()
+  | ModifierNative()
+
+
+
+VarDecl(ProperType type, String name, ModifierList modifiers)
+
+
+
+MethodDecl(Type returnType, String name, ModifierList modifiers, VarDeclList formalParameters, Block methodBody)
+
+ReturnValue =
+    ReturnNothing()
+  | ReturnExpr(Expr expr)
+
+
+
+Type =
+    TypeVoid()
+  | ProperType
+
+ProperType =
+    TypeArray(ProperType componentType)
+  | BaseType
+
+BaseType =
+    TypeInt()
+  | TypeBool()
+  | TypeClass(String name)
+
+
+
+Statement =
+    Block
+  | StmtIf(Expr condition, Statement ifTrue, Statement ifFalse)
+  | StmtWhile(Expr condition, Statement loopBody)
+  | StmtReturn(ReturnValue result)
+  | VarDecl
+  | StmtExpr(Expr expr)
+  | StmtAssign(ExprL address, Expr right)
+
+
+
+Expr =
+    // reads the value from the given address
+    Read(ExprL address)
+  | ExprBinary(Expr left, Operator operator, Expr right)
+  | ExprUnary(UnaryOperator unaryOperator, Expr expr)
+  | MethodCall(Expr receiver, String methodName, ExprList arguments)
+  | FunctionCall(String methodName, ExprList arguments)
+  | BoolConst(boolean boolValue)
+  | Number(int intValue)
+  | ExprThis()
+  | ExprNull()
+  | NewArray(ProperType baseType, Expr arraySize)
+  | NewObject(String className)
+
+Operator =
+    And()
+  | Plus()
+  | Minus()
+  | Times()
+  | Div()
+  | Less()
+  | Equals()
+
+UnaryOperator =
+    UnaryMinus()
+  | Negate()
+
+// ExprL represents expressions that have an address
+// and as such can be used on the left hand side of an assignment
+ExprL =
+    ArrayLookup(Expr arrayExpr, Expr arrayIndex)
+  | FieldAccess(Expr receiver, String fieldName)
+  | VarUse(String varName)
+
+
+
+// List types
+TopLevelDeclList * TopLevelDecl
+MemberDeclList * MemberDecl
+ModifierList * Modifier
+VarDeclList * VarDecl
+MethodDeclList * MethodDecl
+Block * Statement
+ExprList * Expr
+
+
+
+attributes:
+
+"information about the source code"
+nqjtooling.transpiler.frontend.SourcePosition Element.sourcePosition

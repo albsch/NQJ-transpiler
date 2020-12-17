@@ -1,0 +1,385 @@
+package nqjtooling.transpiler.minijava.syntax;
+
+import nqjtooling.transpiler.minijava.ast.*;
+import static nqjtooling.transpiler.minijava.ast.MJ.*;
+import java_cup.runtime.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Consumer;
+import nqjtooling.transpiler.frontend.SyntaxError;
+import nqjtooling.transpiler.frontend.ParserUtils;
+import java_cup.runtime.ComplexSymbolFactory.ComplexSymbol;
+
+
+class MiniJavaParser;
+   
+// Parser code to change the way the parser reports errors (include
+// line and column number of the error). 
+parser code {:
+    
+    private Consumer<SyntaxError> onError;
+
+    public void onError(Consumer<SyntaxError> onError) {
+        this.onError = onError;
+    }
+    
+
+    @Override
+    public void syntax_error(Symbol info) {
+
+        List<Integer> expectedTokens = expected_token_ids();
+        
+        int line, column;
+        StringBuilder message = new StringBuilder("Unexpected token ");
+        if (info instanceof ComplexSymbol) {
+            ComplexSymbol s = (ComplexSymbol) info;
+            line = s.getLeft().getLine();
+            column = s.getLeft().getColumn();
+            
+            message.append(s.getName());
+            
+            if (s.value != null) {
+                message.append("(");
+                message.append(s.value);
+                message.append(")");
+            }
+        } else {
+            line = cur_token.left;
+            column = cur_token.right;
+        }
+        
+        if (!expectedTokens.isEmpty()) {
+            message.append(", expected one of the following: ");
+            boolean first = true;
+            for (int expected : expectedTokens){
+                if (!first) {
+                    message.append(", ");
+                }
+                message.append(symbl_name_from_id(expected));
+                first = false;
+            }
+        }
+        
+        
+        SyntaxError err = new SyntaxError(message.toString(), line, column);
+        if (onError == null) {
+            System.err.println(err);
+        } else {
+            onError.accept(err);
+        }
+    }
+
+    @Override
+    public void report_fatal_error(String message, Object info) {
+        // ignore
+    }
+    
+:};
+   
+
+   
+/* ------------Declaration of Terminals and Non Terminals Section----------- */
+
+terminal INVALID_TOKEN;
+
+// Java keywords:
+terminal ABSTRACT,  CONTINUE,   FOR,          NEW,         SWITCH,
+         ASSERT,    DEFAULT,    IF,           PACKAGE,     SYNCHRONIZED,
+         BOOLEAN,   DO,         GOTO,         PRIVATE,     THIS,
+         BREAK,     DOUBLE,     IMPLEMENTS,   PROTECTED,   THROW,
+         BYTE,      ELSE,       IMPORT,       PUBLIC,      THROWS,
+         CASE,      ENUM,       INSTANCEOF,   RETURN,      TRANSIENT,
+         CATCH,     EXTENDS,    INT,          SHORT,       TRY,
+         CHAR,      FINAL,      INTERFACE,    STATIC,      VOID,
+         CLASS,     FINALLY,    LONG,         STRICTFP,    VOLATILE,
+         CONST,     FLOAT,      NATIVE,       SUPER,       WHILE;
+
+// symbols:
+terminal LBRACE, RBRACE, // { }
+         LBRACKET, RBRACKET, // [ ]
+         LRBRACKET, // [] as a single token
+         LPAREN, RPAREN, // ()
+         DOT, SEMI, COMMA, ASSIGN, NEG, AND, PLUS, MINUS, TIMES, DIV, LESS, EQUALS,
+         UMINUS;
+
+// literals:
+terminal TRUE, FALSE, NULL;
+
+terminal String   NUMBER, ID;
+
+// General Program Structure
+non terminal MJProgram program;
+non terminal MJTopLevelDecl topLevelDecl;
+non terminal MJTopLevelDeclList topLevelDecls;
+
+// Classes
+non terminal MJClassDecl classDecl;
+non terminal MJExtended extendsClass;
+non terminal MJMemberDeclList memberDeclList;
+non terminal MJMemberDecl memberDecl;
+non terminal MJModifier modifier;
+
+// Variables/Fields
+non terminal MJVarDecl varDecl;
+
+// Methods
+non terminal MJMethodDecl methodDecl;
+non terminal MJVarDeclList methodParams;
+non terminal MJVarDeclList methodParamsRest;
+non terminal MJMethodBody  methodBody;
+
+// Types
+non terminal MJBaseType baseType;
+non terminal MJProperType properType;
+non terminal MJType type;
+
+// Statements
+non terminal MJStatement statement;
+non terminal MJBlock block;
+non terminal MJBlock blockStatementList;
+non terminal MJStatement blockStatement;
+
+// Expressions
+non terminal MJExpr exp;
+non terminal Integer multidim;
+non terminal MJExpr expWithoutNewArray;
+non terminal MJExprList paramList;
+non terminal MJExprL expL;
+
+
+precedence left AND;
+precedence left EQUALS;
+precedence left LESS;
+precedence left NEG;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV;
+precedence left UMINUS;
+precedence left LBRACKET;
+precedence left DOT;
+
+/* -------------------- grammar section -------------------*/
+
+
+// ============================================================
+//                 General Program Structure
+// ============================================================
+
+program ::= topLevelDecl:decl topLevelDecls:topLevelDecls
+        {: topLevelDecls.addFront(decl); RESULT = Program(topLevelDecls); :}
+        // Requiring one class declaration manually is a hack to avoid exceptions is CUP
+        // NOTE: EOF at end of program-rule is implicit
+    ;
+
+topLevelDecl ::= classDecl:decl
+        {: RESULT = decl; :}
+    | methodDecl:decl
+        {: RESULT = decl; MJModifierList l = ModifierList(); l.add(ModifierStatic()); decl.setModifiers(l); :}
+    ;
+
+topLevelDecls ::= /* empty */
+        {: RESULT = TopLevelDeclList(); :}
+    | topLevelDecls:front topLevelDecl:last
+        {: front.add(last); RESULT = front; :}
+    ;
+
+// ============================================================
+//                           Classes
+// ============================================================
+
+classDecl ::= CLASS ID:classId extendsClass:extendsClass LBRACE memberDeclList:members RBRACE
+        {:
+            RESULT = ClassDecl(
+                classId, extendsClass,
+                ParserUtils.extractVarDeclarationsFromMembers(members),
+                ParserUtils.extractMethodDeclarationsFromMembers(members));
+        :}
+    ;
+
+extendsClass ::= /* empty */
+        {: RESULT = ExtendsNothing(); :}
+    | EXTENDS ID:parentId
+        {: RESULT = ExtendsClass(parentId); :}
+    ;
+
+memberDeclList ::= /* empty */
+        {: RESULT = MemberDeclList(); :}
+    | memberDeclList:front memberDecl:last
+        {: front.add(last); RESULT = front; :}
+    ;
+
+memberDecl ::= varDecl:decl
+        {: RESULT = decl; :}
+    | methodDecl:decl
+        {: RESULT = decl; :}
+    ;
+
+// ============================================================
+//                     Variables/Fields
+// ============================================================
+
+varDecl ::= properType:type ID:id SEMI
+        {: RESULT = VarDecl(type, id, ModifierList()); :}
+    ;
+
+// ============================================================
+//                           Methods
+// ============================================================
+
+methodDecl ::= properType:type ID:id LPAREN methodParams:methodParams RPAREN block:body
+        {: RESULT = MethodDecl(type, id, ModifierList(), methodParams, body); :}
+    ;
+
+methodParams ::= /* empty */
+        {: RESULT = VarDeclList(); :}
+    | properType:type ID:id methodParamsRest:tail
+        {: tail.addFront(VarDecl(type, id, ModifierList())); RESULT = tail; :}
+    ;
+
+methodParamsRest ::= /* empty */
+        {: RESULT = VarDeclList(); :}
+    | methodParamsRest:front COMMA properType:type ID:id
+        {: front.add(VarDecl(type, id, ModifierList())); RESULT = front; :}
+    ;
+
+// ============================================================
+//                           Types
+// ============================================================
+
+baseType ::= BOOLEAN
+        {: RESULT = TypeBool(); :}
+    | INT
+        {: RESULT = TypeInt(); :}
+    | ID:id
+        {: RESULT = TypeClass(id); :}
+    ;
+
+properType ::= baseType:type
+         {: RESULT = type; :}
+    | properType:includedType LRBRACKET
+         {: RESULT = TypeArray(includedType); :}
+    ;
+
+type ::= properType:type
+        {: RESULT = type; :}
+    | VOID
+        {: RESULT = TypeVoid(); :}
+    ;
+
+// ============================================================
+//                        Statements
+// ============================================================
+
+statement ::= block:b
+        {: RESULT = b; :}
+    | IF LPAREN exp:cond RPAREN statement:thenStmt ELSE statement:elseStmt
+        {: RESULT = StmtIf(cond, thenStmt, elseStmt); :}
+    | WHILE LPAREN exp:cond RPAREN statement:body
+        {: RESULT = StmtWhile(cond, body); :}
+    | RETURN exp:e SEMI
+        {: RESULT = StmtReturn(ReturnExpr(e)); :}
+    | exp:e SEMI
+        {: RESULT = StmtExpr(e); :}
+    | expL:l ASSIGN exp:r SEMI
+        {: RESULT = StmtAssign(l, r); :}
+    ;
+
+block ::= LBRACE blockStatementList:b RBRACE
+        {: RESULT = b; :}
+     ;
+
+blockStatementList ::= /* empty */
+        {: RESULT = Block(); :}
+    | blockStatementList:head blockStatement:tail
+        {: head.add(tail); RESULT = head; :}
+    ;
+
+blockStatement ::= statement:stmt
+        {: RESULT = stmt; :}
+    | varDecl:decl
+        {: RESULT = decl; :}
+    ;
+    
+// ============================================================
+//                        Expressions
+// ============================================================
+
+exp ::= expWithoutNewArray:e
+        {: RESULT = e; :}
+    | NEW properType:t LBRACKET exp:e RBRACKET multidim:dim
+        {:
+            MJProperType type = t;
+            for(int i=0 ; i<dim ; i++){
+                type = TypeArray(type);
+            }
+             RESULT = NewArray(type, e);
+
+
+         :}
+    ;
+
+multidim ::= /* empty */
+        {: RESULT = 0; :}
+    | LRBRACKET multidim:dim
+        {: RESULT = dim+1; :}
+    ;
+
+expWithoutNewArray ::=
+    exp:l AND exp:r
+        {: RESULT = ExprBinary(l, And(), r); :}
+    | exp:l PLUS exp:r
+        {: RESULT = ExprBinary(l, Plus(), r); :}
+    | exp:l MINUS exp:r
+        {: RESULT = ExprBinary(l, Minus(), r); :}
+    | exp:l TIMES exp:r
+        {: RESULT = ExprBinary(l, Times(), r); :}
+    | exp:l DIV exp:r
+        {: RESULT = ExprBinary(l, Div(), r); :}
+    | exp:l LESS exp:r
+        {: RESULT = ExprBinary(l, Less(), r); :}
+    | exp:l EQUALS exp:r
+        {: RESULT = ExprBinary(l, Equals(), r); :}
+    | NEG:op exp:e
+        {: RESULT = ExprUnary(Negate() ,e); :}
+    | MINUS:op exp:e //
+        {: RESULT = ExprUnary(UnaryMinus(), e); :} //
+        %prec UMINUS
+    | exp:e DOT ID:methodId LPAREN RPAREN //No Parameters
+        {: RESULT = MethodCall(e, methodId, ExprList()); :}
+    | exp:e DOT ID:methodId LPAREN paramList:eList RPAREN
+        {: RESULT = MethodCall(e, methodId, eList); :}
+    | ID:methodId LPAREN RPAREN //No Parameters
+        {: RESULT = FunctionCall(methodId, ExprList()); :}
+    | ID:methodId LPAREN paramList:eList RPAREN
+        {: RESULT = FunctionCall(methodId, eList); :}
+    | TRUE
+        {: RESULT = BoolConst(true); :}
+    | FALSE
+        {: RESULT = BoolConst(false); :}
+    | NUMBER:n
+        {: RESULT = Number(Integer.parseInt(n,10)); :}
+    | THIS
+        {: RESULT = ExprThis(); :}
+    | NULL
+        {: RESULT = ExprNull(); :}
+    | NEW ID:objectId LPAREN RPAREN
+        {: RESULT = NewObject(objectId); :}
+    | LPAREN exp:e RPAREN
+        {: RESULT = e; :}
+    | expL:eL
+        {: RESULT = Read(eL); :}
+    ;
+
+paramList ::= exp:head
+        {: RESULT = ExprList(); RESULT.add(head); :}
+    | exp:head COMMA paramList:tail
+        {: tail.addFront(head); RESULT = tail; :}
+    ;
+
+expL ::= ID:id
+        {: RESULT = VarUse(id); :}
+    | expWithoutNewArray:array LBRACKET exp:index RBRACKET
+        {: RESULT = ArrayLookup(array, index); :}
+    | exp:var DOT ID:field
+        {: RESULT = FieldAccess(var, field); :}
+    ;
