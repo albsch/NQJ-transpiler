@@ -52,7 +52,8 @@ public class NQJTranspiler {
     public static final String globalClassName = "___Global";
 
     public String print() {
-        String prefix = "import java.lang.System; class " + globalClassName + " { static int printInt(int value) { System.out.println(value); return value; } public static void main(String[] args) { System.exit(main()); } \n";
+        String prefix = "import java.lang.System; class " + globalClassName + " { static int printInt(int value) { System.out.println(value); return value; } public static void main(String[] args) { System.exit(new "
+                +globalClassName +"().main()); } \n";
         String postfix = "}\n";
         return prefix + AstPrinter.print(javaProgram) + postfix;
     }
