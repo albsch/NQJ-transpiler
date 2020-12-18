@@ -34,10 +34,14 @@ public class AstPrinter implements MJElement.Visitor {
     @Override
     public void visit(MJNewArray na) {
         print("(new ");
-        na.getBaseType().accept(this);
+        na.getBaseT().accept(this);
         print("[");
         na.getArraySize().accept(this);
-        print("])");
+        print("]");
+        for (int i = 1; i < na.getDimensions(); i++) {
+            print("[]");
+        }
+        print(")");
     }
 
     @Override

@@ -78,7 +78,7 @@ Expr =
   | Number(int intValue)
   | ExprThis()
   | ExprNull()
-  | NewArray(ProperType baseType, Expr arraySize)
+  | NewArray(Type baseType, Expr arraySize, Type baseT, int dimensions)
   | NewObject(String className)
 
 Operator =
