@@ -190,4 +190,39 @@ public class ParserAstTests {
 		Assert.assertThat(printed, CoreMatchers.containsString("x = a.s(1, 2, (f + g));"));
 	}
 
+	@Test
+	public void testArrayD1() throws Exception {
+		String input = "int main() { int[] x; x = new int[2]; return 0; }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		System.out.println(printed);
+		Assert.assertThat(printed, CoreMatchers.containsString("new int[2]"));
+	}
+
+	@Test
+	public void testArrayD2() throws Exception {
+		String input = "int main() { int[][] x; x = new int[2][]; return 0; }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		System.out.println(printed);
+		Assert.assertThat(printed, CoreMatchers.containsString("new int[2][]"));
+	}
+
+	@Test
+	public void testArrayD3() throws Exception {
+		String input = "int main() { int[][][] x; x = new int[2][][]; return 0; }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		System.out.println(printed);
+		Assert.assertThat(printed, CoreMatchers.containsString("new int[2][][]"));
+	}
+
+	@Test
+	public void testArrayD4() throws Exception {
+		String input = "int main() { int[][] x; x = new int[2][]; int[] y; y = new int[2]; x[0] = y; return 0; }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		System.out.println(printed);
+		Assert.assertThat(printed, CoreMatchers.containsString("new int[2][]"));
+	}
 }

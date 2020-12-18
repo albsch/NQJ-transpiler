@@ -38,7 +38,7 @@ public class AstPrinter implements MJElement.Visitor {
         print("[");
         na.getArraySize().accept(this);
         print("]");
-        for (int i = 1; i < na.getDimensions(); i++) {
+        for (int i = 0; i < na.getDimensions(); i++) {
             print("[]");
         }
         print(")");
