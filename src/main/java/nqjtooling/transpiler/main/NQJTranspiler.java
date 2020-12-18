@@ -30,7 +30,7 @@ public class NQJTranspiler {
             compiler.getSyntaxErrors().forEach(System.out::println);
             System.exit(7);
         }
-        compiler.print();
+        System.out.println(compiler.print());
     }
 
     public void compileFile(File file) throws Exception {

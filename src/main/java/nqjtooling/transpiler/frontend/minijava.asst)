@@ -1,31 +1,52 @@
 package nqjtooling.transpiler.minijava.ast
-
 typeprefix: MJ
 
 abstract syntax:
 
-Program(ClassDeclList classDecls, FunctionDeclList functionDecls)
+Program(TopLevelDeclList topLevelDecls)
 
 TopLevelDecl =
     ClassDecl
-  | FunctionDecl
+  | MethodDecl
 
-FunctionDecl(Type returnType, String name, VarDeclList formalParameters, Block methodBody)
-
-ClassDecl(String name, Extended extended, VarDeclList fields, FunctionDeclList methods)
+ClassDecl(String name, Extended extended, VarDeclList fields, MethodDeclList methods)
 
 Extended =
     ExtendsNothing()
   | ExtendsClass(String name)
 
-VarDecl(Type type, String name)
-
 MemberDecl =
     VarDecl
-  | FunctionDecl
+  | MethodDecl
+
+Modifier =
+    ModifierPublic()
+  | ModifierProtected()
+  | ModifierPrivate()
+  | ModifierStatic()
+  | ModifierFinal()
+  | ModifierNative()
+
+
+
+VarDecl(ProperType type, String name, ModifierList modifiers)
+
+
+
+MethodDecl(Type returnType, String name, ModifierList modifiers, VarDeclList formalParameters, Block methodBody)
+
+ReturnValue =
+    ReturnNothing()
+  | ReturnExpr(Expr expr)
+
+
 
 Type =
-    TypeArray(Type componentType)
+    TypeVoid()
+  | ProperType
+
+ProperType =
+    TypeArray(ProperType componentType)
   | BaseType
 
 BaseType =
@@ -33,21 +54,17 @@ BaseType =
   | TypeBool()
   | TypeClass(String name)
 
+
+
 Statement =
     Block
   | StmtIf(Expr condition, Statement ifTrue, Statement ifFalse)
   | StmtWhile(Expr condition, Statement loopBody)
-  | StmtReturn(Expr result)
+  | StmtReturn(ReturnValue result)
   | VarDecl
   | StmtExpr(Expr expr)
-  | StmtAssign(ExprL address, Expr value)
+  | StmtAssign(ExprL address, Expr right)
 
-// ExprL represents expressions that have an address
-// and as such can be used on the left hand side of an assignment
-ExprL =
-    ArrayLookup(Expr arrayExpr, Expr arrayIndex)
-  | FieldAccess(Expr receiver, String fieldName)
-  | VarUse(String varName)
 
 
 Expr =
@@ -55,14 +72,13 @@ Expr =
     Read(ExprL address)
   | ExprBinary(Expr left, Operator operator, Expr right)
   | ExprUnary(UnaryOperator unaryOperator, Expr expr)
-  | ArrayLength(Expr arrayExpr)
   | MethodCall(Expr receiver, String methodName, ExprList arguments)
   | FunctionCall(String methodName, ExprList arguments)
   | BoolConst(boolean boolValue)
   | Number(int intValue)
   | ExprThis()
   | ExprNull()
-  | NewArray(Type baseType, Expr arraySize, Type baseT, int dimensions)
+  | NewArray(ProperType baseType, Expr arraySize)
   | NewObject(String className)
 
 Operator =
@@ -78,30 +94,27 @@ UnaryOperator =
     UnaryMinus()
   | Negate()
 
+// ExprL represents expressions that have an address
+// and as such can be used on the left hand side of an assignment
+ExprL =
+    ArrayLookup(Expr arrayExpr, Expr arrayIndex)
+  | FieldAccess(Expr receiver, String fieldName)
+  | VarUse(String varName)
+
+
 
 // List types
 TopLevelDeclList * TopLevelDecl
-ClassDeclList * ClassDecl
 MemberDeclList * MemberDecl
+ModifierList * Modifier
 VarDeclList * VarDecl
-FunctionDeclList * FunctionDecl
+MethodDeclList * MethodDecl
 Block * Statement
 ExprList * Expr
 
 
-// <ex3>
-VarRef = FieldAccess | VarUse
-// </ex3>
 
 attributes:
 
 "information about the source code"
 nqjtooling.transpiler.frontend.SourcePosition Element.sourcePosition
-
-// <ex3>
-MJVarDecl VarRef.variableDeclaration
-MJFunctionDecl FunctionCall.functionDeclaration
-MJClassDecl NewObject.classDeclaration
-MJClassDecl ClassDecl.directSuperClass
-MJClassDecl TypeClass.classDeclaration
-// </ex3>

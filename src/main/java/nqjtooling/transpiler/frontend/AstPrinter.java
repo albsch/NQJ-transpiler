@@ -1,11 +1,19 @@
 package nqjtooling.transpiler.frontend;
 
+
 import nqjtooling.transpiler.minijava.ast.*;
 
+/**
+ * Pretty printer for generated AST classes.
+ * If the .ast file is modified, the printed has to be modified, too.
+ */
 public class AstPrinter implements MJElement.Visitor {
-    private StringBuilder out = new StringBuilder();
+    private final StringBuilder out = new StringBuilder();
     private int indent = 0;
 
+    /**
+     * Printing a generic element.
+     */
     public static String print(MJElement ast) {
         if (ast == null) {
             return "<null>";
@@ -15,15 +23,13 @@ public class AstPrinter implements MJElement.Visitor {
         return printer.out.toString();
     }
 
-    private void println() {
-        out.append("\n");
-        for (int i = 0; i < indent; i++) {
-            out.append("    ");
-        }
-    }
-
     private void print(String s) {
         out.append(s);
+    }
+
+    private void println() {
+        out.append("\n");
+        out.append("    ".repeat(Math.max(0, indent)));
     }
 
     private void println(String s) {
@@ -32,12 +38,33 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
+    public void visit(MJTopLevelDeclList classDeclList) {
+        for (MJTopLevelDecl c : classDeclList) {
+            c.accept(this);
+            println();
+        }
+
+    }
+
+    @Override
+    public void visit(MJClassDeclList classDeclList) {
+        for (MJClassDecl c : classDeclList) {
+            c.accept(this);
+            println();
+        }
+    }
+
+    @Override
     public void visit(MJNewArray na) {
         print("(new ");
-        na.getBaseType().accept(this);
+        na.getBaseT().accept(this);
         print("[");
         na.getArraySize().accept(this);
-        print("])");
+        print("]");
+        for (int i = 1; i < na.getDimensions(); i++) {
+            print("[]");
+        }
+        print(")");
     }
 
     @Override
@@ -49,7 +76,7 @@ public class AstPrinter implements MJElement.Visitor {
     public void visit(MJStmtAssign stmtAssign) {
         stmtAssign.getAddress().accept(this);
         print(" = ");
-        stmtAssign.getRight().accept(this);
+        stmtAssign.getValue().accept(this);
         println(";");
     }
 
@@ -77,14 +104,6 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
-    public void visit(MJTopLevelDeclList topLevelDeclList) {
-        for (MJTopLevelDecl decl : topLevelDeclList) {
-            decl.accept(this);
-            println();
-        }
-    }
-
-    @Override
     public void visit(MJRead read) {
         read.getAddress().accept(this);
     }
@@ -101,23 +120,8 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
-    public void visit(MJMemberDeclList memberDeclList) {
-        for (MJMemberDecl member : memberDeclList) {
-            member.accept(this);
-        }
-    }
-
-    @Override
     public void visit(MJNegate negate) {
         print("!");
-    }
-
-    @Override
-    public void visit(MJModifierList modifierList) {
-        for (MJModifier mod : modifierList) {
-            mod.accept(this);
-            print(" ");
-        }
     }
 
     @Override
@@ -133,36 +137,6 @@ public class AstPrinter implements MJElement.Visitor {
         print("extends ");
         print(extendsClass.getName());
         print(" ");
-    }
-
-    @Override
-    public void visit(MJModifierPublic modifierPublic) {
-        print("public");
-    }
-
-    @Override
-    public void visit(MJModifierProtected modifierProtected) {
-        print("protected");
-    }
-
-    @Override
-    public void visit(MJModifierPrivate modifierPrivate) {
-        print("private");
-    }
-
-    @Override
-    public void visit(MJModifierStatic modifierStatic) {
-        print("static");
-    }
-
-    @Override
-    public void visit(MJModifierFinal modifierFinal) {
-        print("final");
-    }
-
-    @Override
-    public void visit(MJModifierNative modifierNative) {
-        print("native");
     }
 
     @Override
@@ -231,7 +205,8 @@ public class AstPrinter implements MJElement.Visitor {
 
     @Override
     public void visit(MJProgram program) {
-        program.getTopLevelDecls().accept(this);
+        program.getFunctionDecls().accept(this);
+        program.getClassDecls().accept(this);
     }
 
     @Override
@@ -274,16 +249,17 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
-    public void visit(MJTypeVoid typeVoid) {
-        print("void");
-    }
-
-    @Override
-    public void visit(MJMethodDeclList methodDeclList) {
-        for (MJMethodDecl m : methodDeclList) {
+    public void visit(MJFunctionDeclList methodDeclList) {
+        for (MJFunctionDecl m : methodDeclList) {
             m.accept(this);
             println();
         }
+    }
+
+    @Override
+    public void visit(MJArrayLength arrayLength) {
+        arrayLength.getArrayExpr().accept(this);
+        print(".length");
     }
 
     @Override
@@ -356,8 +332,7 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
-    public void visit(MJMethodDecl methodDecl) {
-        methodDecl.getModifiers().accept(this);
+    public void visit(MJFunctionDecl methodDecl) {
         methodDecl.getReturnType().accept(this);
         print(" ");
         print(methodDecl.getName());
@@ -397,11 +372,10 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
-    public void visit(MJReturnNothing nothing) {
-    }
-
-    @Override
-    public void visit(MJReturnExpr expr) {
-        expr.getExpr().accept(this);
+    public void visit(MJMemberDeclList memberDeclList) {
+        for (MJMemberDecl memberDecl : memberDeclList) {
+            memberDecl.accept(this);
+            println();
+        }
     }
 }

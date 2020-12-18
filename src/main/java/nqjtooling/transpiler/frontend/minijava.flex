@@ -135,7 +135,7 @@ EndOfLineComment     = "//" [^\r\n]* {LineTerminator}?
     "."                { return symbol(DOT); }
     ";"                { return symbol(SEMI); }
     ","                { return symbol(COMMA); }
-    "="                { return symbol(ASSIGN); }
+    "="                { return symbol(EQ); }
     "!"                { return symbol(NEG); }
     "&&"               { return symbol(AND); }
     "+"                { return symbol(PLUS); }

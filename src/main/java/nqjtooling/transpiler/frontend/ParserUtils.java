@@ -23,21 +23,4 @@ public class ParserUtils {
         }
         return result;
     }
-
-    /**
-     * Extracts all member declarations that are method declarations.
-     * @param members   the list of all members of a class
-     * @return          only the method declarations from {@code members}
-     */
-    public static MJMethodDeclList extractMethodDeclarationsFromMembers(MJMemberDeclList members) {
-        MJMethodDeclList result = MJ.MethodDeclList();
-        for (MJMemberDecl member : members) {
-            if (member instanceof MJMethodDecl) {
-                MJMethodDecl copy = ((MJMethodDecl) member).copy();
-                copy.setSourcePosition(member.getSourcePosition());
-                result.add(copy);
-            }
-        }
-        return result;
-    }
 }
