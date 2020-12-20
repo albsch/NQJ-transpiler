@@ -179,6 +179,7 @@ public class ParserAstTests {
 		String input = "int main() { return 0; } class A{ int m(int a, boolean b, int c){return 0;}}";
 		MJProgram ast = new MJFrontend().parseString(input);
 		String printed = AstPrinter.print(ast);
+		System.out.println(printed);
 		Assert.assertThat(printed, CoreMatchers.containsString("int m(int a, boolean b, int c)"));
 	}
 
