@@ -174,7 +174,7 @@ program ::= topLevelDecl:decl topLevelDecls:topLevelDecls
 topLevelDecl ::= classDecl:decl
         {: RESULT = decl; :}
     | methodDecl:decl
-        {: RESULT = decl; MJModifierList l = ModifierList(); if(!decl.getName().equals("main")) { l.add(ModifierStatic()); } decl.setModifiers(l); :}
+        {: RESULT = decl; MJModifierList l = ModifierList(); decl.setModifiers(l); :}
     ;
 
 topLevelDecls ::= /* empty */
