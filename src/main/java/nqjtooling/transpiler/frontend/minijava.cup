@@ -146,6 +146,7 @@ non terminal Integer multidim;
 non terminal MJExpr expWithoutNewArray;
 non terminal MJExprList paramList;
 non terminal MJExprL expL;
+non terminal MJExprList exprbrackets;
 
 
 precedence left AND;
@@ -306,17 +307,22 @@ blockStatement ::= statement:stmt
 
 exp ::= expWithoutNewArray:e
         {: RESULT = e; :}
-    | NEW properType:t LBRACKET exp:e RBRACKET multidim:dim
+    | NEW properType:t  exprbrackets:e multidim:dim
         {:
             MJProperType type = t.copy();
             for(int i=0 ; i<dim ; i++){
                 type = TypeArray(type);
             }
              RESULT = NewArray(type, e, t, dim);
-
-
          :}
     ;
+
+exprbrackets ::=
+        LBRACKET exp:i RBRACKET exprbrackets:b
+            {: RESULT = b; b.addFront(i); :}
+      | LBRACKET exp:i RBRACKET
+            {: RESULT = ExprList(); RESULT.addFront(i); :}
+      ;
 
 multidim ::= /* empty */
         {: RESULT = 0; :}
