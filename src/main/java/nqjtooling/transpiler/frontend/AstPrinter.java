@@ -35,9 +35,11 @@ public class AstPrinter implements MJElement.Visitor {
     public void visit(MJNewArray na) {
         print("(new ");
         na.getBaseT().accept(this);
-        print("[");
-        na.getArraySize().accept(this);
-        print("]");
+        for (MJExpr e : na.getArraySizes()) {
+            print("[");
+            e.accept(this);
+            print("]");
+        }
         for (int i = 0; i < na.getDimensions(); i++) {
             print("[]");
         }

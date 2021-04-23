@@ -133,7 +133,7 @@ public class ParserAstTests {
 		String input = "int main() { int x; x = new int[5][2]; return 0; }";
 		MJFrontend frontend = new MJFrontend();
 		frontend.parseString(input);
-		assertFalse(frontend.getSyntaxErrors().isEmpty());
+		Assert.assertTrue(frontend.getSyntaxErrors().isEmpty());
 	}
 
 	@Test
@@ -225,5 +225,14 @@ public class ParserAstTests {
 		String printed = AstPrinter.print(ast);
 		System.out.println(printed);
 		Assert.assertThat(printed, CoreMatchers.containsString("new int[2][]"));
+	}
+
+	@Test
+	public void testArrayD5() throws Exception {
+		String input = "int main() { int[][][] x; x = new int[2][2][]; return 0; }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		System.out.println(printed);
+		Assert.assertThat(printed, CoreMatchers.containsString("new int[2][2][]"));
 	}
 }
