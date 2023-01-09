@@ -393,7 +393,8 @@ public class AstPrinter implements MJElement.Visitor {
 
     @Override
     public void visit(MJMethodDecl methodDecl) {
-        methodDecl.getModifiers().accept(this);
+        print("public ");
+//        methodDecl.getModifiers().accept(this);
         methodDecl.getReturnType().accept(this);
         print(" ");
         print(methodDecl.getName());
