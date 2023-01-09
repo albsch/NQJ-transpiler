@@ -120,6 +120,12 @@ non terminal MJMemberDeclList memberDeclList;
 non terminal MJMemberDecl memberDecl;
 non terminal MJModifier modifier;
 
+// Interface
+non terminal MJInterfaceMemberDeclList interfaceMemberDeclList;
+non terminal MJInterfaceFunctionDecl interfaceFunctionDecl;
+non terminal MJInterfaceDecl interfaceDecl;
+non terminal MJImplemented implementsClass;
+
 // Variables/Fields
 non terminal MJVarDecl varDecl;
 
@@ -172,8 +178,11 @@ program ::= topLevelDecl:decl topLevelDecls:topLevelDecls
         // NOTE: EOF at end of program-rule is implicit
     ;
 
-topLevelDecl ::= classDecl:decl
+topLevelDecl ::=
+     classDecl:decl
         {: RESULT = decl; :}
+    | interfaceDecl:c
+        {: RESULT = c; :}
     | methodDecl:decl
         {: RESULT = decl; MJModifierList l = ModifierList(); decl.setModifiers(l); :}
     ;
@@ -188,10 +197,10 @@ topLevelDecls ::= /* empty */
 //                           Classes
 // ============================================================
 
-classDecl ::= CLASS ID:classId extendsClass:extendsClass LBRACE memberDeclList:members RBRACE
+classDecl ::= CLASS ID:classId extendsClass:extendsClass implementsClass:implementsClass LBRACE memberDeclList:members RBRACE
         {:
             RESULT = ClassDecl(
-                classId, extendsClass,
+                classId, extendsClass, implementsClass,
                 ParserUtils.extractVarDeclarationsFromMembers(members),
                 ParserUtils.extractMethodDeclarationsFromMembers(members));
         :}
@@ -202,6 +211,24 @@ extendsClass ::= /* empty */
     | EXTENDS ID:parentId
         {: RESULT = ExtendsClass(parentId); :}
     ;
+
+implementsClass ::= /* empty */
+        {: RESULT = ImplementsNothing(); :}
+    | IMPLEMENTS ID:parentId
+        {: RESULT = ImplementsClass(parentId); :}
+    ;
+
+interfaceDecl ::=
+        INTERFACE ID:name LBRACE interfaceMemberDeclList:members RBRACE
+            {: RESULT = ParserUtils.interfaceDecl(name, members); :}
+      ;
+
+interfaceMemberDeclList ::=
+      interfaceFunctionDecl:m interfaceMemberDeclList:l
+            {: RESULT = l; l.add(0, m); :}
+      |
+            {: RESULT = InterfaceMemberDeclList(); :}
+      ;
 
 memberDeclList ::= /* empty */
         {: RESULT = MemberDeclList(); :}
@@ -242,6 +269,11 @@ methodParamsRest ::= /* empty */
     | methodParamsRest:front COMMA properType:type ID:id
         {: front.add(VarDecl(type, id, ModifierList())); RESULT = front; :}
     ;
+
+interfaceFunctionDecl ::=
+        type:returnType ID:name LPAREN methodParams:params RPAREN SEMI
+            {: RESULT = InterfaceFunctionDecl(returnType, name, params); :}
+        ;
 
 // ============================================================
 //                           Types

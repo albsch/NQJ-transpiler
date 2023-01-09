@@ -27,6 +27,30 @@ public class ParserAstTests {
 	}
 
 	@Test
+	public void testInterface() throws Exception {
+		String input = "int main() { printInt(42); return 0; } interface b { }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		Assert.assertThat(printed, CoreMatchers.containsString("printInt(42);"));
+	}
+
+	@Test
+	public void testInterface2() throws Exception {
+		String input = "int main() { printInt(42); return 0; } interface b { int test(); }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		Assert.assertThat(printed, CoreMatchers.containsString("printInt(42);"));
+	}
+
+	@Test
+	public void testInterface3() throws Exception {
+		String input = "int main() { printInt(42); return 0; } class a implements b {} interface b { int test(); }";
+		MJProgram ast = new MJFrontend().parseString(input);
+		String printed = AstPrinter.print(ast);
+		Assert.assertThat(printed, CoreMatchers.containsString("printInt(42);"));
+	}
+
+	@Test
 	public void testLocalVar() throws Exception {
 		String input = "int main() { boolean x; return 0; }";
 		MJProgram ast = new MJFrontend().parseString(input);

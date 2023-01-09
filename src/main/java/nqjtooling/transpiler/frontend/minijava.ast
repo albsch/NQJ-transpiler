@@ -7,13 +7,20 @@ Program(TopLevelDeclList topLevelDecls)
 
 TopLevelDecl =
     ClassDecl
+  | InterfaceDecl
   | MethodDecl
 
-ClassDecl(String name, Extended extended, VarDeclList fields, MethodDeclList methods)
+ClassDecl(String name, Extended extended, Implemented impls, VarDeclList fields, MethodDeclList methods)
+
+InterfaceDecl(String name, InterfaceFunctionDeclList interfaceMethods)
 
 Extended =
     ExtendsNothing()
   | ExtendsClass(String name)
+
+Implemented =
+    ImplementsNothing()
+  | ImplementsClass(String name)
 
 MemberDecl =
     VarDecl
@@ -34,6 +41,7 @@ VarDecl(ProperType type, String name, ModifierList modifiers)
 
 
 MethodDecl(Type returnType, String name, ModifierList modifiers, VarDeclList formalParameters, Block methodBody)
+InterfaceFunctionDecl(Type returnType, String name, VarDeclList formalParameters)
 
 ReturnValue =
     ReturnNothing()
@@ -111,6 +119,10 @@ VarDeclList * VarDecl
 MethodDeclList * MethodDecl
 Block * Statement
 ExprList * Expr
+
+InterfaceMemberDeclList * InterfaceFunctionDecl
+InterfaceFunctionDeclList * InterfaceFunctionDecl
+InterfaceDeclList * InterfaceDecl
 
 
 

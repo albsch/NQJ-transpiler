@@ -107,6 +107,24 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
+    public void visit(MJInterfaceMemberDeclList interfaceMemberDeclList) {
+
+    }
+
+    @Override
+    public void visit(MJInterfaceFunctionDeclList interfaceFunctionDeclList) {
+        for (MJInterfaceFunctionDecl m : interfaceFunctionDeclList) {
+            m.accept(this);
+            println();
+        }
+    }
+
+    @Override
+    public void visit(MJInterfaceDeclList interfaceDeclList) {
+
+    }
+
+    @Override
     public void visit(MJMemberDeclList memberDeclList) {
         for (MJMemberDecl member : memberDeclList) {
             member.accept(this);
@@ -138,6 +156,18 @@ public class AstPrinter implements MJElement.Visitor {
     public void visit(MJExtendsClass extendsClass) {
         print("extends ");
         print(extendsClass.getName());
+        print(" ");
+    }
+
+    @Override
+    public void visit(MJImplementsNothing implementsNothing) {
+
+    }
+
+    @Override
+    public void visit(MJImplementsClass implementsClass) {
+        print("implements ");
+        print(implementsClass.getName());
         print(" ");
     }
 
@@ -379,6 +409,21 @@ public class AstPrinter implements MJElement.Visitor {
     }
 
     @Override
+    public void visit(MJInterfaceFunctionDecl interfaceFunctionDecl) {
+        interfaceFunctionDecl.getReturnType().accept(this);
+        print(" ");
+        print(interfaceFunctionDecl.getName());
+        print("(");
+        for (MJVarDecl p : interfaceFunctionDecl.getFormalParameters()) {
+            if (p != interfaceFunctionDecl.getFormalParameters().get(0)) {
+                print(", ");
+            }
+            p.accept(this);
+        }
+        print("); ");
+    }
+
+    @Override
     public void visit(MJTypeArray typeArray) {
         typeArray.getComponentType().accept(this);
         print("[]");
@@ -390,6 +435,8 @@ public class AstPrinter implements MJElement.Visitor {
         print(classDecl.getName());
         print(" ");
         classDecl.getExtended().accept(this);
+        print(" ");
+        classDecl.getImpls().accept(this);
         indent++;
         println(" {");
         for (MJVarDecl v : classDecl.getFields()) {
@@ -400,6 +447,18 @@ public class AstPrinter implements MJElement.Visitor {
         indent--;
         println("}");
 
+    }
+
+    @Override
+    public void visit(MJInterfaceDecl interfaceDecl) {
+        print("interface ");
+        print(interfaceDecl.getName());
+        print(" ");
+        indent++;
+        println(" {");
+        interfaceDecl.getInterfaceMethods().accept(this);
+        indent--;
+        println("}");
     }
 
     @Override

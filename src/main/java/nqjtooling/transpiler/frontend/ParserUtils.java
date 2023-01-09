@@ -2,6 +2,8 @@ package nqjtooling.transpiler.frontend;
 
 import nqjtooling.transpiler.minijava.ast.*;
 
+import java.util.List;
+
 /**
  * Miscellaneous methods to keep the cup file clean.
  */
@@ -39,5 +41,13 @@ public class ParserUtils {
             }
         }
         return result;
+    }
+
+    public static MJInterfaceDecl interfaceDecl(String name, List<MJInterfaceFunctionDecl> members) {
+        MJInterfaceFunctionDeclList mems = MJ.InterfaceFunctionDeclList();
+        for (MJInterfaceFunctionDecl member : members) {
+            mems.add(member.copy());
+        }
+        return MJ.InterfaceDecl(name, mems);
     }
 }
